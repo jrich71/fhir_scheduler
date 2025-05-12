@@ -115,6 +115,7 @@ def create_appointment_ui(name, dob, gender, reason):
                 "display": type_display,
                 "system": "http://terminology.hl7.org/CodeSystem/v2-0276"
             },
+            # Point to a SNOMED FHIR API?
             "reason_code": {
                 "code": reason_code,
                 "display": reason_display,
@@ -125,11 +126,12 @@ def create_appointment_ui(name, dob, gender, reason):
         appointment = fhir.create_appointment(appointment_data)
 
         return (
-            f"✅ Appointment created for {name}:\n"
-            f"{refined_reason}\n\n"
-            f"Type: {type_code} - {type_display}\n"
-            f"Reason Code: {reason_code} - {reason_display}\n"
-            f"FHIR ID: {appointment.get('id')}"
+            f"✅ Appointment created for:\n"
+            f"Name: {name}\n"
+            f"Reason: {refined_reason}\n"
+            f"Appointment Type: {type_display}\n"
+            #f"Reason Code: {reason_code} - {reason_display}\n"
+            f"Appointment ID: {appointment.get('id')}" # References the unique logical identifier for the patient resource
         )
 
     except Exception as e:
