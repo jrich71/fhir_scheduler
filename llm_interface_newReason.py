@@ -1,5 +1,4 @@
 import gradio as gr
-import openai
 import google.generativeai as genai
 import os
 from dotenv import load_dotenv
@@ -10,22 +9,12 @@ from datetime import datetime
 
 # Load environment variables
 load_dotenv()
+
 #openai.api_key = os.getenv("OPENAI_API_KEY")
 genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
 
 # Initialize your FHIR interface
 fhir = FHIRConnector()
-
-# ChatGPT: Define LLM helper
-# def ask_llm(prompt):
-#     response = openai.OpenAI().chat.completions.create(
-#         model="gpt-3.5-turbo",
-#         messages=[
-#             {"role": "system", "content": "You are a helpful assistant for creating FHIR-compliant medical appointments."},
-#             {"role": "user", "content": prompt}
-#         ]
-#     )
-#     return response["choices"][0]["message"]["content"]
 
 # Gemini: Define LLM helper
 def ask_llm(prompt):
@@ -62,11 +51,11 @@ def create_appointment_ui(name, dob, gender, reason):
         try:
             dob = datetime.strptime(dob, "%Y-%m-%d").date().isoformat()
         except ValueError:
-            dob = "1900-01-01"
+            dob = "9999-99-99"
 
         # Prompt Gemini for structured FHIR metadata
         gemini_prompt = (
-            f"The patient described the reason for their visit as: '{reason}'. "
+            f"The patient described the reason for their visit as: '{reason}'."
             "Return a JSON object with the following fields only:\n"
             "- refined_reason: a concise, FHIR-ready appointment description\n"
             "- appointment_type_code: a code from http://terminology.hl7.org/CodeSystem/v2-0276 "
@@ -128,9 +117,10 @@ def create_appointment_ui(name, dob, gender, reason):
         return (
             f"✅ Appointment created for:\n"
             f"Name: {name}\n"
+            f"Date of Birth: {dob}\n"
+            f"Gender: {gender}\n"
             f"Reason: {refined_reason}\n"
             f"Appointment Type: {type_display}\n"
-            #f"Reason Code: {reason_code} - {reason_display}\n"
             f"Appointment ID: {appointment.get('id')}" # References the unique logical identifier for the patient resource
         )
 
@@ -150,3 +140,4 @@ gr.Interface(
     title="FHIR Appointment Scheduler",
     description="Enter patient information to generate and submit a FHIR Appointment using Gemini for language refinement."
 ).launch(server_port=8081)
+

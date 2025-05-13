@@ -1,156 +1,98 @@
 
-# FHIR Appointment Scheduler (WIP)
+# FHIR Appointment Scheduler with LLM Integration
 
-This project is a work-in-progress prototype that integrates **LLM-driven language refinement** with **FHIR-compliant resource creation**. The app allows users to submit natural language reasons for medical visits, which are refined and structured using **Google Gemini 1.5 Flash**, and then used to create `Patient` and `Appointment` resources on a local **HAPI FHIR server**.
-
----
-
-## 🧠 What It Does
-
-- Accepts patient input via a simple **Gradio interface**
-- Uses **Gemini 1.5 Flash** to:
-  - Refine a user's natural-language "reason for visit"
-  - Select an appropriate FHIR `appointmentType` code from [v2-0276](https://terminology.hl7.org/CodeSystem/v2-0276)
-  - Recommend a SNOMED/FHIR `reasonCode` and display
-- Sends data to a **FHIR server** using the [SMART-on-FHIR `fhirclient`](https://github.com/smart-on-fhir/client-py) library
+This project provides a functional, local interface for scheduling FHIR-compliant medical appointments using free-text input and large language model (LLM) assistance. It includes both backend utilities for generating FHIR resources and a user-facing Gradio UI to capture appointment details.
 
 ---
 
-## 📄 Files
+## 📁 Project Structure
 
 ### `llm_interface_newReason.py`
-
-This file launches the main interface and performs the following:
-
-- Builds a structured prompt for Gemini
-- Parses Gemini’s JSON response (after stripping Markdown if present)
-- Normalizes inputs (e.g., gender and DOB formatting)
-- Calls `FHIRConnector` to:
-  - Create a `Patient` resource
-  - Create an `Appointment` resource based on Gemini’s reasoning
-- Runs a Gradio UI on `http://localhost:8081`
+This is the main script that:
+- Launches a Gradio web interface on your local machine (port 8081).
+- Accepts patient data (name, DOB, gender, reason for visit) via text fields.
+- Uses an LLM (e.g., OpenAI/Gemini) to refine the reason for visit.
+- Calls utility functions from `fhir_utils.py` to generate and (optionally) submit a FHIR Appointment resource.
 
 ### `fhir_utils.py`
-
-This module defines a `FHIRConnector` class, which abstracts the interaction with the HAPI FHIR server. It handles:
-
-- ✅ Patient creation:
-  - Full name (first, middle, last, prefix, suffix)
-  - Contact info (email, phone)
-  - Gender and birthdate
-  - Optional identifiers
-- ✅ Appointment creation:
-  - Start and end time
-  - Patient participant (required and accepted)
-  - Appointment type (`appointmentType` from FHIR v2-0276)
-  - Reason code (`reasonCode` with SNOMED or FHIR vocabulary)
-  - Optional description
-- ✅ Record retrieval:
-  - `get_patient(patient_id)`
-  - `get_appointment(appointment_id)`
-
-Sample usage is included in the `__main__` block for direct testing.
+This module contains utility functions to:
+- Build FHIR-compliant `Appointment` and `Patient` resources.
+- Format input data into FHIR-ready JSON.
+- Post the Appointment data to a running FHIR server via REST.
 
 ---
 
-## 📁 Directory Structure
+## 🖥️ Interface Preview
 
-```
-project/
-├── llm_interface_newReason.py    # Gradio + Gemini + FHIR integration
-├── fhir_utils.py                 # FHIR resource creation and access
-├── .env                          # Contains API keys
-└── README.md                     # This file
-```
+### Patient Input and Result
+![User input and result panel](Resources/input02.png)
 
 ---
 
-## 🧪 Example Gemini Prompt
-
-```text
-The patient described the reason for their visit as: 'I've had a sore throat for two weeks.' 
-Return a JSON object with the following fields only:
-- refined_reason
-- appointment_type_code
-- appointment_type_display
-- reason_code
-- reason_display
-Respond with JSON only. Do not include code blocks or natural language.
-```
-
-### Expected Response:
-
-```json
-{
-  "refined_reason": "Evaluation of persistent sore throat",
-  "appointment_type_code": "CONSULT",
-  "appointment_type_display": "Consultation",
-  "reason_code": "267036007",
-  "reason_display": "Sore throat"
-}
-```
-
-### Example Input and Output
-
-#### A screenshot of user input (left) and resulting output to the FHIR server (right)
-
-![Patient Input](Resources/input.png)
-
-#### A screenshot of patient information in a HAPI FHIR server
-
-![Patient Information in FHIR Format](Resources/patient.png)
-
-#### A screenshot of appointment information in a HAPI FHIR server
-
-![Appointment Information in FHIR Format](Resources/appointment.png)
+### Generated FHIR Appointment Resource
+![FHIR Appointment JSON](Resources/appointment02.png)
 
 ---
 
-## 🔐 Environment Setup
-
-Create a `.env` file in the root directory with the following content:
-
-```
-GOOGLE_API_KEY=your_gemini_api_key_here
-```
+### Generated FHIR Patient Resource
+![FHIR Patient JSON](Resources/patient02.png)
 
 ---
 
-## 📦 Installation
+## ⚙️ Requirements
 
-Install dependencies:
+Install dependencies using:
 
 ```bash
-pip install gradio google-generativeai python-dotenv fhirclient
+pip install gradio python-dotenv openai requests
 ```
 
-Ensure your HAPI FHIR server is running locally on port `8080`.
+Also, ensure you have access to a running **HAPI FHIR server** (or equivalent) at a known base URL.
 
 ---
 
-## 🚀 Running the App
+## 🚀 Running the Application
 
+1. Clone or download the project files.
+2. Create a `.env` file with your API keys and FHIR server URL. Example:
+
+```env
+FHIR_BASE_URL=http://localhost:8080/fhir
+OPENAI_API_KEY=your-key-here
+```
+
+3. Run the interface:
 ```bash
 python llm_interface_newReason.py
 ```
 
-Then open your browser to:  
-[http://localhost:8081](http://localhost:8081)
+4. Visit `http://localhost:8081` in your browser to use the tool.
 
 ---
 
-## 🧭 Next Steps
+## ✨ Features
 
-- [ ] Validate Gemini-suggested codes against official value sets
-- [ ] Allow user to select or override appointment time
-- [ ] Extend interface to include practitioner scheduling
-- [ ] Implement error handling for edge cases and timeouts
-- [ ] Expand vocabulary and mappings for multilingual inputs
+- ✅ Clean Gradio UI with themed layout
+- ✅ Integration with LLM to refine "reason for visit"
+- ✅ Automatic creation of FHIR Appointment and Patient resources
+- ✅ Local testing against FHIR-compliant servers
 
 ---
 
-## 🤝 Acknowledgments
+## 📌 Notes
 
-- [Google Gemini 1.5 Flash](https://ai.google.dev)
-- [SMART-on-FHIR Python Client](https://github.com/smart-on-fhir/client-py)
-- [HL7 FHIR Specification](https://www.hl7.org/fhir/)
+- The application does not store patient data and is intended for demonstration or development use only.
+- LLM-based refinement assumes proper configuration of API access to OpenAI or Gemini.
+
+---
+
+## 🧑‍💻 Author
+
+Josh Richardson, PhD, MS, MLIS  
+[LinkedIn](https://www.linkedin.com/) | [GitHub](https://github.com/jrich71)
+
+---
+
+## 📄 License
+
+MIT License – use freely with attribution.
